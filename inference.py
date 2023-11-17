@@ -77,7 +77,7 @@ if args.confidence_model_dir is not None:
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 if args.protein_ligand_csv is not None:
-    df = pd.read_csv(args.protein_ligand_csv)
+    df = pd.read_csv(args.protein_ligand_csv, sep="\t")
     protein_path_list = df['protein_path'].tolist()
     ligand_descriptions = df['ligand_description'].tolist()
 else:

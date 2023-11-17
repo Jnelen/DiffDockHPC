@@ -128,9 +128,9 @@ if args.keep_cache == False:
 for i, jobLigands in enumerate(ligandPathsSplit):
 	csvFilePath = f"{outputDir}/csvs/job_csv_{str(i+1)}.csv"
 	with open(csvFilePath, 'w') as jobCSV:
-		jobCSV.write("protein_path,ligand_description\n")
+		jobCSV.write("protein_path\tligand_description\n")
 		for jobLigand in jobLigands:
-			jobCSV.write(f"{args.protein_path},{jobLigand}\n")
+			jobCSV.write(f"{args.protein_path}\t{jobLigand}\n")
 
 	jobCSV.close()
 	
