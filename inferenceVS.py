@@ -24,7 +24,7 @@ parser.add_argument('--protein_path', '-r', '-p', required=True, type=str, defau
 parser.add_argument('--ligand', '-l', required=True, type=str, default='', help='The path to the directory of (separate) mol2/sdf ligand files')
 parser.add_argument('--out_dir', '-out', '-o', required=True,type=str, default='', help='Directory where the output structures will be saved to')
 parser.add_argument('--jobs', '-j', required=True, type=int, default=1, help='Number of jobs to use')
-parser.add_argument('--time', '-t', '-tj', required=False, default="", help='Number of jobs to use')
+parser.add_argument('--time', '-t', '-tj', required=False, default="", help='Amount of time each job can run')
 parser.add_argument('--queue', '-qu', type=str, default="", help='On which node to launch the jobs. The default value is the default queue for the user. Might need to be specified if there is no default queue configured')
 parser.add_argument('--mem', '-m', type=str, default="8G", help='How much memory to use for each job. The default value is `8GB')
 parser.add_argument('--gpu', '-gpu', '-GPU', '--GPU', action="store_true", default=False, help='Use GPU resources. This will accelerate docking calculations if a compatible GPU is available.')
