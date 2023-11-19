@@ -94,7 +94,7 @@ if len(embeddingPathList) == 0:
 	nvArgument = ""
 	if args.gpu == True:
 		nvArgument = "--nv"
-	subprocess.run(f"singularity exec {nvArgument} DiffDockHPC.sif python proteinEmbedding.py {args.protein_path}", shell=True)
+	subprocess.run(f"singularity exec {nvArgument} --bind $PWD DiffDockHPC.sif python proteinEmbedding.py {args.protein_path}", shell=True)
 print("Launching jobs now..")	
 
 ligandPaths = glob.glob(f"{args.ligand}/*.sdf") + glob.glob(f"{args.ligand}/*.mol2")
