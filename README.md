@@ -8,22 +8,25 @@ For more details about DiffDock itself, we refer to the [DiffDock Github](https:
 * Slurm
 
 ### Installation instructions:
-1. Clone the repository  
+1. Clone the repository and navigate to it
     ```
     git clone https://github.com/Jnelen/DiffDockHPC
     ```
-2. Download the singularity image (~4 GB). It contains all the necessary packages and dependencies to run DiffDock correctly
+   ```
+   cd DiffDockHPC
+   ```
+2. Download the singularity image (~4 GB) to DiffDockHPC's singularity directory. The singularity image contains all the necessary packages and dependencies to run DiffDock correctly
 
    ```
    wget --no-check-certificate -r "https://drive.usercontent.google.com/download?id=1eo_--K6qZoiaphsTK5G4dA8kikZLHG4y&confirm=t" -O singularity/DiffDockHPC.sif
    ```
    
-   alternatively you can build the singularity image yourself using:
+   alternatively, you can build the singularity image yourself using:
    ```
    singularity build singularity/DiffDockHPC.sif singularity/DiffDockHPC.def
    ```  
    
-3. run a test example to generate the necessary cache look-up tables for SO(2) and SO(3) distributions. (This only needs to happen once and should only take about 5-10 minutes)  
+3. Run a test example to generate the necessary cache look-up tables for SO(2) and SO(3) distributions. (This only needs to happen once and should only take about 5-10 minutes)  
    ```
    python inferenceVS.py -p data/1a0q/1a0q_protein_processed.pdb -l data/1a0q/ -out TEST -j 1
    ```  
