@@ -55,6 +55,12 @@ args = parser.parse_args()
 
 beginTime = time.time()
 
+## Ensure PyTorch uses the correct amount of cores
+try:
+	torch.set_num_threads(int(os.environ["SLURM_CPUS_ON_NODE"]))
+except:
+	print("Something went wrong when specifying the requested number of threads, a different amount of resources might be used")
+
 if args.config:
     config_dict = yaml.load(args.config, Loader=yaml.FullLoader)
     arg_dict = args.__dict__
@@ -237,4 +243,4 @@ if args.delete_cache == True:
 	
 endTime = time.time()
 
-print("Calculations finished after " + str(endTime-beginTime) + " seconds")
+print(f"Calculations finished after {endTime-beginTime:.2f} seconds")
