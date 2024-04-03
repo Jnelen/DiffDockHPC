@@ -33,6 +33,7 @@ parser.add_argument('--num_outputs', '-n', type=int, default=1, help='How many s
 parser.add_argument('--remove_hs', action='store_true', default=False, help='Remove the hydrogens in the final output structures')
 parser.add_argument('--keep_local_structures', action='store_true', default=False, help='Keeps the local structure when specifying an input with 3D coordinates instead of generating them with RDKit')
 parser.add_argument('--keep_cache', action='store_true', default=False, help='Keep the Cache directories after finishing the calculations (Not recommended)')
+parser.add_argument('--no_slurm', '-ns', action='store_true', default=False, help='Don\'t use slurm to handle the resources. This will run all samples on 1 GPU. Other Slurm arguments such as the amount memory, time limit, ... will also be ignored')
 
 
 args = parser.parse_args()
@@ -48,6 +49,11 @@ if args.cores is None:
 		args.cores = 1
 	else:
 		args.cores = 4
+		
+## If --no_slurm is set, always only use 1 job
+if args.no_slurm:
+	args.jobs = 1
+	
 if args.time == "":
 	timeArg = ""
 else:
@@ -133,13 +139,19 @@ for i, jobLigands in enumerate(ligandPathsSplit):
 			jobCSV.write(f"{args.protein_path}\t{jobLigand}\n")
 
 	jobCSV.close()
-	
-	## Execute command using singularity and sbatch wrap giving the csv as an input, and passing the input variables as well
-	if args.gpu == True:
-		jobCMD = f'sbatch --wrap="singularity run --nv --bind $PWD singularity/DiffDockHPC.sif python3 inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} {remove_hs} --out_dir {outputDir}/molecules/ {keep_original_struct} {keep_cache}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --gres=gpu:1 --job-name=DiffDockHPC -c {str(args.cores)} {timeArg} {queueArgument}'
+
+	if not args.no_slurm:
+		## Execute command using singularity and sbatch wrap giving the csv as an input, and passing the input variables as well
+		if args.gpu == True:
+			jobCMD = f'sbatch --wrap="singularity run --nv --bind $PWD singularity/DiffDockHPC.sif python3 inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} {remove_hs} --out_dir {outputDir}/molecules/ {keep_original_struct} {keep_cache} -c {str(args.cores)}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --gres=gpu:1 --job-name=DiffDockHPC -c {str(args.cores)} {timeArg} {queueArgument}'
+		else:
+			jobCMD = f'sbatch --wrap="singularity run --bind $PWD singularity/DiffDockHPC.sif python3 inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} {remove_hs} --out_dir {outputDir}/molecules/ {keep_original_struct} {keep_cache} -c {str(args.cores)}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --job-name=DiffDockHPC -c {str(args.cores)} {timeArg} {queueArgument}'
 	else:
-		jobCMD = f'sbatch --wrap="singularity run --bind $PWD singularity/DiffDockHPC.sif python3 inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} {remove_hs} --out_dir {outputDir}/molecules/ {keep_original_struct} {keep_cache}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --job-name=DiffDockHPC -c {str(args.cores)} {timeArg} {queueArgument}'
-	
+		if args.gpu == True:
+			jobCMD = f'singularity run --nv --bind $PWD singularity/DiffDockHPC.sif python3 inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} {remove_hs} --out_dir {outputDir}/molecules/ {keep_original_struct} {keep_cache} -c {str(args.cores)}'
+		else:
+			jobCMD = f'singularity run --bind $PWD singularity/DiffDockHPC.sif python3 inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} {remove_hs} --out_dir {outputDir}/molecules/ {keep_original_struct} {keep_cache} -c {str(args.cores)}'
+		
 	with open(f"{outputDir}/jobs/job_{str(i+1)}.sh", "w") as jobfile:
 		jobfile.write("#!/usr/bin/env bash\n")
 		jobfile.write(jobCMD)

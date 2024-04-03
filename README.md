@@ -74,7 +74,10 @@ The main file to use is `inferenceVS.py`. It has the following options/flags:
 
 - `--keep_cache`: 
   Keep the Cache directories after finishing the calculations. This can save time when rerunning calculations with the same input files. (Not recommended)
-
+  
+- `--no_slurm`: 
+  Don't use slurm to handle the resources. This will run all samples on 1 GPU. Other Slurm arguments such as the amount memory, time limit, ... will also be ignored. The amount of CPU cores will still be set.
+  
 - `-h`, `--help`: 
   Show the help message and exit.
 

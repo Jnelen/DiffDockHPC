@@ -50,6 +50,7 @@ parser.add_argument('--sigma_schedule', type=str, default='expbeta', help='')
 parser.add_argument('--actual_steps', type=int, default=None, help='Number of denoising steps that are actually performed')
 parser.add_argument('--keep_local_structures', action='store_true', default=False, help='Keeps the local structure when specifying an input with 3D coordinates instead of generating them with RDKit')
 parser.add_argument('--delete_cache', action='store_true', default=False, help='Delete the Cache directories after finishing the calculations')
+parser.add_argument('--cores', '-c', type=int, default=None, help='How many cores to use for each job. The default value is 1 when used with the GPU option enabled, otherwise it defaults to 4 cores')
 
 args = parser.parse_args()
 
@@ -57,7 +58,8 @@ beginTime = time.time()
 
 ## Ensure PyTorch uses the correct amount of cores
 try:
-	torch.set_num_threads(int(os.environ["SLURM_CPUS_ON_NODE"]))
+	torch.set_num_threads(args.cores)
+	print(f"Using {args.cores} CPU core(s)")
 except:
 	print("Something went wrong when specifying the requested number of threads, a different amount of resources might be used")
 
