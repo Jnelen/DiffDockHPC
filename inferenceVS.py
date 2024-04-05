@@ -38,10 +38,17 @@ parser.add_argument('--no_slurm', '-ns', action='store_true', default=False, hel
 
 args = parser.parse_args()
 
-## Check if Singularity image is present
+## Check if Singularity image is present and ask to download it
 if not os.path.exists("singularity/DiffDockHPC.sif"):
 	print("The Singularity image doesn't seem to be present. Please follow the installation instructions and download it from there, or build it manually using the def file")
-	sys.exit()
+	answer = input("Would you like to download it automatically? (y/n) ").lower()
+	while answer not in ("y", "n", "yes", "no"):
+		print("Invalid input. Please enter y(es) or n(o).")
+		answer = input("Would you like to download the Singularity image automatically? (y/n) ").lower()
+	if answer == "y" or answer == "yes":
+		subprocess.run('wget --no-check-certificate -r "https://drive.usercontent.google.com/download?id=1eo_--K6qZoiaphsTK5G4dA8kikZLHG4y&confirm=t" -O singularity/DiffDockHPC.sif ', shell=True)			
+	else:
+		sys.exit("Please download or build the Singularity image manually and try again")
 
 ## Determine the amount of cores if not defined by the user
 if args.cores is None:

@@ -5,7 +5,7 @@ For more details about DiffDock itself, we refer to the [DiffDock Github](https:
 
 ### Requirements:
 * Singularity 
-* Slurm
+* Slurm (There is a --no_slurm mode, but using Slurm is highly recommended)
 
 ### Installation instructions:
 1. Clone the repository and navigate to it
@@ -15,18 +15,8 @@ For more details about DiffDock itself, we refer to the [DiffDock Github](https:
    ```
    cd DiffDockHPC
    ```
-2. Download the singularity image (~4 GB) to DiffDockHPC's singularity directory. The singularity image contains all the necessary packages and dependencies to run DiffDock correctly
-
-   ```
-   wget --no-check-certificate -r "https://drive.usercontent.google.com/download?id=1eo_--K6qZoiaphsTK5G4dA8kikZLHG4y&confirm=t" -O singularity/DiffDockHPC.sif
-   ```
    
-   alternatively, you can build the singularity image yourself using:
-   ```
-   singularity build singularity/DiffDockHPC.sif singularity/DiffDockHPC.def
-   ```  
-   
-3. Run a test example to generate the necessary cache look-up tables for SO(2) and SO(3) distributions. (This only needs to happen once and should only take about 5-10 minutes)  
+2. Run a test example to automatically download the Singularity image (~4 GB) and to generate the necessary cache look-up tables for SO(2) and SO(3) distributions. (This only needs to happen once and should only take about 5-10 minutes)  
    ```
    python inferenceVS.py -p data/1a0q/1a0q_protein_processed.pdb -l data/1a0q/ -out TEST -j 1
    ```  
@@ -34,7 +24,15 @@ For more details about DiffDock itself, we refer to the [DiffDock Github](https:
    ```
    python inferenceVS.py -p data/1a0q/1a0q_protein_processed.pdb -l data/1a0q/ -out TEST -j 1 -gpu
    ```  
-
+You can also download the Singularity image manually:
+   ```
+   wget --no-check-certificate -r "https://drive.usercontent.google.com/download?id=1eo_--K6qZoiaphsTK5G4dA8kikZLHG4y&confirm=t" -O singularity/DiffDockHPC.sif
+   ```
+   
+   alternatively, you can build the singularity image yourself using:
+   ```
+   singularity build singularity/DiffDockHPC.sif singularity/DiffDockHPC.def
+   ```
 ### Options
 
 The main file to use is `inferenceVS.py`. It has the following options/flags:  
