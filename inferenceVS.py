@@ -125,7 +125,7 @@ if args.keep_local_structures == True:
 
 remove_hs = ""
 if args.remove_hs == True:
-	 keep_original_struct = "--remove_hs"
+	 remove_hs = "--remove_hs"
 	 
 keep_cache = ""
 if args.keep_cache == False:
