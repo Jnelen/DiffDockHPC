@@ -19,7 +19,7 @@ In case you want to work with DiffDockHPC using the DiffDock 1.0 implementation,
    cd DiffDockHPC
    ```
    
-2. Run a test example to automatically download the Singularity image (~3 GB) and to generate the necessary cache look-up tables for SO(2) and SO(3) distributions. (This only needs to happen once and but this can take some time).  
+2. Run a test example to automatically download the Singularity image (~3 GB) and to generate the necessary cache look-up tables for SO(2) and SO(3) distributions. (This only needs to happen once and usually takes around 15 minutes).  
    The `--no_slurm` flag is optional here, but makes it easier to track the progress.   
    ```
    python inferenceVS.py -p data/1a0q/1a0q_protein_processed.pdb -l data/1a0q/ -out TEST -j 1 --no_slurm
