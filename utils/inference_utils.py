@@ -80,7 +80,7 @@ def compute_ESM_embeddings(model, alphabet, labels, sequences):
 
     with torch.no_grad():
         for batch_idx, (labels, strs, toks) in enumerate(data_loader):
-            print(f"Processing {batch_idx + 1} of {len(batches)} batches ({toks.size(0)} sequences)")
+            #print(f"Processing {batch_idx + 1} of {len(batches)} batches ({toks.size(0)} sequences)")
             if torch.cuda.is_available():
                 toks = toks.to(device="cuda", non_blocking=True)
 

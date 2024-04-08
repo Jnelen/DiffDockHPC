@@ -18,6 +18,8 @@ from datasets.constants import aa_short2long, atom_order, three_to_one
 from datasets.parse_chi import get_chi_angles, get_coords, aa_idx2aa_short, get_onehot_sequence
 from utils.torsion import get_transformation_mask
 
+## Only print ProDy warnings or errors
+pr.confProDy(verbosity="warning")
 
 periodic_table = GetPeriodicTable()
 allowable_features = {
@@ -408,12 +410,14 @@ def get_rec_misc_atom_feat(bio_atom=None, atom_name=None, element=None, get_misc
     return atom_feat
 
 
-def write_mol_with_coords(mol, new_coords, path):
+def write_mol_with_coords(mol, new_coords, path, removeHs):
     w = Chem.SDWriter(path)
     conf = mol.GetConformer()
     for i in range(mol.GetNumAtoms()):
         x,y,z = new_coords.astype(np.double)[i]
         conf.SetAtomPosition(i,Point3D(x,y,z))
+    if removeHs == False:
+        mol = Chem.AddHs(mol, addCoords=True)
     w.write(mol)
     w.close()
 

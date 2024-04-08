@@ -17,7 +17,6 @@ ode: false
 old_filtering_model: true
 old_score_model: false
 resample_rdkit: false
-samples_per_complex: 10
 sigma_schedule: expbeta
 temp_psi_rot: 0.9022615585677628
 temp_psi_tor: 0.5946212391366862

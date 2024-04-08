@@ -1,0 +1,19 @@
+Bootstrap: docker
+From: continuumio/miniconda3
+MirrorURL: https://hub.docker.com/r/continuumio/miniconda3
+
+%files
+	singularity/DiffDockHPC_environment.yml DiffDockHPC_environment.yml
+
+%post
+    /opt/conda/bin/conda env create -f DiffDockHPC_environment.yml
+    /opt/conda/bin/conda clean -a -y
+    pip cache purge
+
+%runscript
+    exec /opt/conda/envs/DiffDockHPC/bin/"$@"
+
+%labels
+    AUTHOR Jochem Nelen (jnelen@ucam.edu)
+    Version v1
+    Made using: https://stackoverflow.com/questions/54678805/containerize-a-conda-environment-in-a-singularity-container

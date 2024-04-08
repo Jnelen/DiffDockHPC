@@ -1,6 +1,8 @@
 import copy
 import os
+import time
 import torch
+import warnings
 from argparse import ArgumentParser, Namespace, FileType
 from functools import partial
 import numpy as np
@@ -27,10 +29,12 @@ parser.add_argument('--complex_name', type=str, default=None, help='Name that th
 parser.add_argument('--protein_path', type=str, default=None, help='Path to the protein file')
 parser.add_argument('--protein_sequence', type=str, default=None, help='Sequence of the protein for ESMFold, this is ignored if --protein_path is not None')
 parser.add_argument('--ligand_description', type=str, default='CCCCC(NC(=O)CCC(=O)O)P(=O)(O)OC1=CC=CC=C1', help='Either a SMILES string or the path to a molecule file that rdkit can read')
+parser.add_argument('--remove_output_hs', action='store_true', default=False, help='Remove the hydrogens in the final output structures')
+parser.add_argument('--cores', '-c', type=int, default=None, help='How many cores to use for each job. The default value is 1 when used with the GPU option enabled, otherwise it defaults to 4 cores')
 
 parser.add_argument('--out_dir', type=str, default='results/user_inference', help='Directory where the outputs will be written to')
 parser.add_argument('--save_visualisation', action='store_true', default=False, help='Save a pdb file with all of the steps of the reverse diffusion')
-parser.add_argument('--samples_per_complex', type=int, default=10, help='Number of samples to generate')
+parser.add_argument('--samples_per_complex', type=int, default=1, help='Number of samples to generate')
 
 parser.add_argument('--model_dir', type=str, default=None, help='Path to folder with trained score model and hyperparameters')
 parser.add_argument('--ckpt', type=str, default='best_ema_inference_epoch_model.pt', help='Checkpoint to use for the score model')
@@ -67,6 +71,22 @@ parser.add_argument('--gnina_poses_to_optimize', type=int, default=1)
 args = parser.parse_args()
 
 REPOSITORY_URL = os.environ.get("REPOSITORY_URL", "https://github.com/gcorso/DiffDock")
+
+beginTime = time.time()
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+## Suppress specific warnings that clutter the job.out file
+warnings.filterwarnings("ignore", message="The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`.")
+warnings.filterwarnings("ignore", message="invalid value encountered in cast")
+
+## Ensure PyTorch uses the correct amount of cores
+try:
+	torch.set_num_threads(args.cores)
+	print(f"DiffDock will run on {device}, and use {args.cores} CPU core(s)")
+except:
+	print("Something went wrong when specifying the requested number of threads, a different amount of resources might be used..")
+	print(f"DiffDock will run on {device}")
 
 if args.config:
     config_dict = yaml.load(args.config, Loader=yaml.FullLoader)
@@ -109,15 +129,15 @@ if args.confidence_model_dir is not None:
     with open(f'{args.confidence_model_dir}/model_parameters.yml') as f:
         confidence_args = Namespace(**yaml.full_load(f))
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f"DiffDock will run on {device}")
-
 if args.protein_ligand_csv is not None:
-    df = pd.read_csv(args.protein_ligand_csv)
+    df = pd.read_csv(args.protein_ligand_csv, sep=';')
+    
     complex_name_list = set_nones(df['complex_name'].tolist())
     protein_path_list = set_nones(df['protein_path'].tolist())
-    protein_sequence_list = set_nones(df['protein_sequence'].tolist())
     ligand_description_list = set_nones(df['ligand_description'].tolist())
+    
+    ## We don't use protein sequences, but it is still a mandatory input variable
+    protein_sequence_list = [None]*len(complex_name_list)
 else:
     complex_name_list = [args.complex_name if args.complex_name else f"complex_0"]
     protein_path_list = [args.protein_path]
@@ -125,9 +145,6 @@ else:
     ligand_description_list = [args.ligand_description]
 
 complex_name_list = [name if name is not None else f"complex_{i}" for i, name in enumerate(complex_name_list)]
-for name in complex_name_list:
-    write_dir = f'{args.out_dir}/{name}'
-    os.makedirs(write_dir, exist_ok=True)
 
 # preprocessing of complexes into geometric graphs
 test_dataset = InferenceDataset(out_dir=args.out_dir, complex_names=complex_name_list, protein_files=protein_path_list,
@@ -179,8 +196,8 @@ tr_schedule = get_t_schedule(inference_steps=args.inference_steps, sigma_schedul
 
 failures, skipped = 0, 0
 N = args.samples_per_complex
-print('Size of test dataset: ', len(test_dataset))
-for idx, orig_complex_graph in tqdm(enumerate(test_loader)):
+print('\nSize of test dataset: ', len(test_dataset))
+for idx, orig_complex_graph in tqdm(enumerate(test_loader), total=len(test_loader), ascii=True):
     if not orig_complex_graph.success[0]:
         skipped += 1
         print(f"HAPPENING | The test dataset did not contain {test_dataset.complex_names[idx]} for {test_dataset.ligand_descriptions[idx]} and {test_dataset.protein_files[idx]}. We are skipping this complex.")
@@ -241,26 +258,32 @@ for idx, orig_complex_graph in tqdm(enumerate(test_loader)):
             ligand_pos = ligand_pos[re_order]
 
         # save predictions
-        write_dir = f'{args.out_dir}/{complex_name_list[idx]}'
+        molName = f'{test_dataset.complex_names[idx]}'
         for rank, pos in enumerate(ligand_pos):
             mol_pred = copy.deepcopy(lig)
             if score_model_args.remove_hs: mol_pred = RemoveAllHs(mol_pred)
-            if rank == 0: write_mol_with_coords(mol_pred, pos, os.path.join(write_dir, f'rank{rank+1}.sdf'))
-            write_mol_with_coords(mol_pred, pos, os.path.join(write_dir, f'rank{rank+1}_confidence{confidence[rank]:.2f}.sdf'))
+
+            ## Add MolName and Confidence as properties
+            mol_pred.SetProp("DiffDock_Confidence", f"{confidence[rank]:.2f}")
+            mol_pred.SetProp("_Name", molName)
+
+            ## Write the outputfile
+            write_mol_with_coords(mol_pred, pos, os.path.join(args.out_dir, f'VS_DD_{molName}_rank{rank+1}_confidence{confidence[rank]:.2f}.sdf'), args.remove_output_hs)
 
         # save visualisation frames
         if args.save_visualisation:
             if confidence is not None:
                 for rank, batch_idx in enumerate(re_order):
-                    visualization_list[batch_idx].write(os.path.join(write_dir, f'rank{rank+1}_reverseprocess.pdb'))
+                    visualization_list[batch_idx].write(os.path.join(args.out_dir, f'rank{rank+1}_reverseprocess.pdb'))
             else:
                 for rank, batch_idx in enumerate(ligand_pos):
-                    visualization_list[batch_idx].write(os.path.join(write_dir, f'rank{rank+1}_reverseprocess.pdb'))
+                    visualization_list[batch_idx].write(os.path.join(args.out_dir, f'rank{rank+1}_reverseprocess.pdb'))
 
     except Exception as e:
         print("Failed on", orig_complex_graph["name"], e)
         failures += 1
 
-print(f'Failed for {failures} complexes')
-print(f'Skipped {skipped} complexes')
+print(f'\n{len(test_dataset)-skipped-failures} out of {len(test_dataset)} ({100*(len(test_dataset)-skipped-failures)/len(test_dataset):.2f}%) complexes were succesfully processed. (Failed for {failures} complexes, Skipped {skipped} complexes)')
 print(f'Results are in {args.out_dir}')
+
+print(f"\nCalculations finished after {time.time()-beginTime:.2f} seconds")
