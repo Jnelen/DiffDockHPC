@@ -1,10 +1,12 @@
 # DiffDockHPC
-DiffDockHPC is a fork of [DiffDock](https://github.com/gcorso/DiffDock), which adds support to run DiffDock on HPC systems using Slurm and Singularity.  
+DiffDockHPC is a fork of [DiffDock](https://github.com/gcorso/DiffDock), which adds support to run DiffDock on HPC systems using Singularity and Slurm.  
 DiffDockHPC has been developed to be part of a consensus docking protocol: [ESSENCE-Dock](https://pubs.acs.org/doi/abs/10.1021/acs.jcim.3c01982).  
 For more details about DiffDock itself, we refer to the [DiffDock Github](https://github.com/gcorso/DiffDock) and the [Paper on arXiv](https://arxiv.org/abs/2210.01776).
 DiffDockHPC current version matches to DiffDock v1.1 ([DiffDock-L](https://arxiv.org/abs/2402.18396)).  
+**Note:** If you update from DiffDockHPC v1.0, it is highly recommended to perform a clean install.  
+
 DiffDockHPC is also available for the original DiffDock v1.0 implementation. This version was used in the original [ESSENCE-Dock](https://pubs.acs.org/doi/abs/10.1021/acs.jcim.3c01982) paper.
-In case you want to work with DiffDockHPC using the DiffDock 1.0 implementation, you can clone the project, and use `git checkout DiffDockHPCv1.0` or `git checkout v1.0`.
+In case you want to work with DiffDockHPC using the DiffDock 1.0 implementation, you can clone the project, and use `git checkout DiffDockHPCv1.0`.
 
 ### Requirements:
 * Singularity 
