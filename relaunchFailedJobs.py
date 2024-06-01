@@ -17,8 +17,14 @@ import os
 import subprocess
 import sys
 
+if len(sys.argv) < 2:
+	sys.exit("You have to put in a DiffDockHPC run as an argument")
+	
 inputPath = sys.argv[1]
 
+if not os.path.isdir(inputPath):
+	sys.exit("The input path doesn't seem to be a valid directory")
+	
 finishedList = []
 jobPaths = []
 
@@ -37,6 +43,9 @@ finishedList = set(finishedList)
 ## Get all the paths and sort them by jobnumber
 jobPaths = sorted(glob.glob(f"{inputPath}/jobs/*.sh"), key=lambda x: int(os.path.basename(x).split("job_")[-1].split("_")[0].split(".")[0]))
 
+if not len(jobPaths) > len(finishedList):
+	sys.exit(f"All the {len(finishedList)} jobs have successfully finished")
+	
 ## Check the jobs and relaunch them if they haven't finished
 for path in jobPaths:
 	jobNumber = str(os.path.basename(path).split("job_")[-1].split("_")[0].split(".")[0])
@@ -45,5 +54,3 @@ for path in jobPaths:
 		print(f"Relaunching job_{jobNumber}")
 		subprocess.run(f"sh {path}", shell=True)
 		
-
-
