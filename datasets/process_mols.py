@@ -17,6 +17,7 @@ from datasets.conformer_matching import get_torsion_angles, optimize_rotatable_b
 from datasets.constants import aa_short2long, atom_order, three_to_one
 from datasets.parse_chi import get_chi_angles, get_coords, aa_idx2aa_short, get_onehot_sequence
 from utils.torsion import get_transformation_mask
+from utils.logging_utils import get_logger
 
 ## Only print ProDy warnings or errors
 pr.confProDy(verbosity="warning")
@@ -307,11 +308,11 @@ def generate_conformer(mol):
     failures, id = 0, -1
     while failures < 3 and id == -1:
         if failures > 0:
-            print(f'rdkit coords could not be generated. trying again {failures}.')
+            get_logger().debug(f'rdkit coords could not be generated. trying again {failures}.')
         id = AllChem.EmbedMolecule(mol, ps)
         failures += 1
     if id == -1:
-        print('rdkit coords could not be generated without using random coords. using random coords now.')
+        get_logger().info('rdkit coords could not be generated without using random coords. using random coords now.')
         ps.useRandomCoords = True
         AllChem.EmbedMolecule(mol, ps)
         AllChem.MMFFOptimizeMolecule(mol, confId=0)
@@ -333,8 +334,12 @@ def get_lig_graph_with_matching(mol_, complex_graph, popsize, maxiter, matching,
                 positions.append(conf.GetPositions())
             complex_graph['ligand'].orig_pos = np.asarray(positions) if len(positions) > 1 else positions[0]
 
-        rotable_bonds = get_torsion_angles(mol_maybe_noh)
-        #if not rotable_bonds: print("no_rotable_bonds but still using it")
+        # rotatable_bonds = get_torsion_angles(mol_maybe_noh)
+        _tmp = copy.deepcopy(mol_)
+        if remove_hs:
+            _tmp = RemoveHs(_tmp, sanitize=True)
+        _tmp = AllChem.RemoveAllHs(_tmp)
+        rotatable_bonds = get_torsion_angles(_tmp)
 
         for i in range(num_conformers):
             mols, rmsds = [], []
@@ -348,8 +353,8 @@ def get_lig_graph_with_matching(mol_, complex_graph, popsize, maxiter, matching,
                     mol_rdkit = RemoveHs(mol_rdkit, sanitize=True)
                 mol_rdkit = AllChem.RemoveAllHs(mol_rdkit)
                 mol = AllChem.RemoveAllHs(copy.deepcopy(mol_maybe_noh))
-                if rotable_bonds and not skip_matching:
-                    optimize_rotatable_bonds(mol_rdkit, mol, rotable_bonds, popsize=popsize, maxiter=maxiter)
+                if rotatable_bonds and not skip_matching:
+                    optimize_rotatable_bonds(mol_rdkit, mol, rotatable_bonds, popsize=popsize, maxiter=maxiter)
                 mol.AddConformer(mol_rdkit.GetConformer())
                 rms_list = []
                 AllChem.AlignMolConformers(mol, RMSlist=rms_list)
@@ -421,6 +426,7 @@ def write_mol_with_coords(mol, new_coords, path, removeHs):
     w.write(mol)
     w.close()
 
+
 def read_molecule(molecule_file, sanitize=False, calc_charges=False, remove_hs=False):
     if molecule_file.endswith('.mol2'):
         mol = Chem.MolFromMol2File(molecule_file, sanitize=False, removeHs=False)
@@ -437,8 +443,8 @@ def read_molecule(molecule_file, sanitize=False, calc_charges=False, remove_hs=F
     elif molecule_file.endswith('.pdb'):
         mol = Chem.MolFromPDBFile(molecule_file, sanitize=False, removeHs=False)
     else:
-        return ValueError('Expect the format of the molecule_file to be '
-                          'one of .mol2, .sdf, .pdbqt and .pdb, got {}'.format(molecule_file))
+        raise ValueError('Expect the format of the molecule_file to be '
+                         'one of .mol2, .sdf, .pdbqt and .pdb, got {}'.format(molecule_file))
 
     try:
         if sanitize or calc_charges:
@@ -453,7 +459,12 @@ def read_molecule(molecule_file, sanitize=False, calc_charges=False, remove_hs=F
 
         if remove_hs:
             mol = Chem.RemoveHs(mol, sanitize=sanitize)
-    except:
+
+    except Exception as e:
+        # Print stacktrace
+        import traceback
+        msg = traceback.format_exc()
+        get_logger().warning(f"Failed to process molecule: {molecule_file}\n{msg}")
         return None
 
     return mol

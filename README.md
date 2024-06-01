@@ -84,4 +84,3 @@ The main file to use is `inferenceVS.py`. It has the following options/flags:
 
 ## License
 MIT
-
