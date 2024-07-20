@@ -160,7 +160,11 @@ class InferenceDataset(Dataset):
             self.lm_embeddings = [None] * len(self.complex_names)
 
         else:
-            self.lm_embeddings = precomputed_lm_embeddings
+            if not isinstance(precomputed_lm_embeddings,list):
+                protein_embedding = torch.load(precomputed_lm_embeddings)             
+                self.lm_embeddings = [protein_embedding] * len(self.complex_names)
+            else:
+                self.lm_embeddings = precomputed_lm_embeddings
 
         # generate structures with ESMFold
         if None in protein_files:

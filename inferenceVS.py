@@ -107,9 +107,6 @@ os.mkdir(outputDir + "/jobs")
 ## Copy protein file to the directory
 shutil.copy(args.protein_path, outputDir)
 
-if not args.no_slurm:
-	print("Launching jobs now..")	
-
 ligandPaths = glob.glob(f"{args.ligand}/*.sdf") + glob.glob(f"{args.ligand}/*.mol2")
 
 ## Code to distribute the query ligands among the amount of jobs 
@@ -121,7 +118,25 @@ def split(a, n):
     return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
 
 ligandPathsSplit = list(split(ligandPaths, args.jobs))
-	 
+
+## Perform ESM embedding
+proteinName = os.path.splitext(os.path.basename(args.protein_path))[0]
+ESM_Embedding_Path = f"data/protein_embeddings/{proteinName}.pt"
+
+## Check if protein embeddings exist already, if not generate them
+if not os.path.isdir("data/protein_embeddings/"):
+	os.mkdir("data/protein_embeddings/")
+if not os.path.isfile(ESM_Embedding_Path):
+	
+	nvArgument = ""
+	if args.gpu == True:
+		nvArgument = "--nv"
+	subprocess.run(f"singularity run {nvArgument} --bind $PWD singularity/DiffDockHPC.sif python -u proteinEmbedding.py {args.protein_path}", shell=True)
+
+## Launch jobs
+if not args.no_slurm:
+	print("Launching jobs now..")	
+
 for i, jobLigands in enumerate(ligandPathsSplit):
 	csvFilePath = f"{outputDir}/csvs/job_csv_{str(i+1)}.csv"
 	with open(csvFilePath, 'w') as jobCSV:
@@ -136,14 +151,14 @@ for i, jobLigands in enumerate(ligandPathsSplit):
 	if not args.no_slurm:
 		## Execute command using singularity and sbatch wrap giving the csv as an input, and passing the input variables as well
 		if args.gpu == True:
-			jobCMD = f'sbatch --wrap="singularity run --nv --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} -c {str(args.cores)}{remove_hs_arg}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --gres=gpu:1 --job-name=DiffDockHPC -c {str(args.cores)}{timeArg}{queueArgument}'
+			jobCMD = f'sbatch --wrap="singularity run --nv --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} --esm_embeddings_path {ESM_Embedding_Path} -c {str(args.cores)}{remove_hs_arg}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --gres=gpu:1 --job-name=DiffDockHPC -c {str(args.cores)}{timeArg}{queueArgument}'
 		else:
-			jobCMD = f'sbatch --wrap="singularity run --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} -c {str(args.cores)}{remove_hs_arg}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --job-name=DiffDockHPC -c {str(args.cores)}{timeArg}{queueArgument}'
+			jobCMD = f'sbatch --wrap="singularity run --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} --esm_embeddings_path {ESM_Embedding_Path} -c {str(args.cores)}{remove_hs_arg}" --mem {args.mem} --output={outputDir}/jobs_out/job_{str(i+1)}_%j.out --job-name=DiffDockHPC -c {str(args.cores)}{timeArg}{queueArgument}'
 	else:
 		if args.gpu == True:
-			jobCMD = f'singularity run --nv --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} -c {str(args.cores)}{remove_hs_arg} 2>&1 | tee {outputDir}/jobs_out/job_1.out'
+			jobCMD = f'singularity run --nv --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} --esm_embeddings_path {ESM_Embedding_Path} -c {str(args.cores)}{remove_hs_arg} 2>&1 | tee {outputDir}/jobs_out/job_1.out'
 		else:
-			jobCMD = f'singularity run --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} -c {str(args.cores)}{remove_hs_arg} 2>&1 | tee {outputDir}/jobs_out/job_1.out'
+			jobCMD = f'singularity run --bind $PWD singularity/DiffDockHPC.sif python3 -u inference.py --protein_ligand_csv {csvFilePath} --samples_per_complex {args.num_outputs} --out_dir {outputDir}/molecules/ --config {args.config} --esm_embeddings_path {ESM_Embedding_Path} -c {str(args.cores)}{remove_hs_arg} 2>&1 | tee {outputDir}/jobs_out/job_1.out'
 	
 	## Write the DiffDockHPC job file	
 	with open(f"{outputDir}/jobs/job_{str(i+1)}.sh", "w") as jobfile:

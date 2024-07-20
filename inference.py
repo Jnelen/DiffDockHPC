@@ -69,6 +69,7 @@ def get_parser():
     parser.add_argument('--cores', '-c', type=int, default=None, help='How many cores to use for each job. The default value is 1 when used with the GPU option enabled, otherwise it defaults to 4 cores')
 
     parser.add_argument('-l', '--log', '--loglevel', type=str, default='INFO', dest="loglevel", help='Log level. Default %(default)s')
+    parser.add_argument('--esm_embeddings_path', type=str, default=None, help='If this is set then the LM embeddings at that path will be used for the receptor features')
 
     parser.add_argument('--out_dir', type=str, default='results/user_inference', help='Directory where the outputs will be written to')
     parser.add_argument('--save_visualisation', action='store_true', default=False, help='Save a pdb file with all of the steps of the reverse diffusion')
@@ -189,6 +190,7 @@ def main(args):
                                     c_alpha_max_neighbors=score_model_args.c_alpha_max_neighbors,
                                     all_atoms=score_model_args.all_atoms, atom_radius=score_model_args.atom_radius,
                                     atom_max_neighbors=score_model_args.atom_max_neighbors,
+                                    precomputed_lm_embeddings=args.esm_embeddings_path,
                                     knn_only_graph=False if not hasattr(score_model_args, 'not_knn_only_graph') else not score_model_args.not_knn_only_graph)
     test_loader = DataLoader(dataset=test_dataset, batch_size=1, shuffle=False)
 
