@@ -65,6 +65,7 @@ def get_parser():
     parser.add_argument('--protein_sequence', type=str, default=None, help='Sequence of the protein for ESMFold, this is ignored if --protein_path is not None')
     parser.add_argument('--ligand_description', type=str, default='CCCCC(NC(=O)CCC(=O)O)P(=O)(O)OC1=CC=CC=C1', help='Either a SMILES string or the path to a molecule file that rdkit can read')
     parser.add_argument('--remove_output_hs', action='store_true', default=False, help='Remove the hydrogens in the final output structures')
+    parser.add_argument('--seperate_dirs', action='store_true', default=False, help='Output the molecules per protein structure')
     parser.add_argument('--cores', '-c', type=int, default=None, help='How many cores to use for each job. The default value is 1 when used with the GPU option enabled, otherwise it defaults to 4 cores')
 
     parser.add_argument('-l', '--log', '--loglevel', type=str, default='INFO', dest="loglevel", help='Log level. Default %(default)s')
@@ -295,7 +296,7 @@ def main(args):
                 ligand_pos = ligand_pos[re_order]
 
             # save predictions
-            molName = f'{test_dataset.complex_names[idx]}'
+            molName = test_dataset.complex_names[idx]
             for rank, pos in enumerate(ligand_pos):
                 mol_pred = copy.deepcopy(lig)
                 if score_model_args.remove_hs: mol_pred = RemoveAllHs(mol_pred)
@@ -305,7 +306,11 @@ def main(args):
                 mol_pred.SetProp("_Name", molName)
 
                 ## Write the outputfile
-                write_mol_with_coords(mol_pred, pos, os.path.join(args.out_dir, f'VS_DD_{molName}_rank{rank+1}_confidence{confidence[rank]:.2f}.sdf'), args.remove_output_hs)
+                if args.seperate_dirs:
+                    protein_name = os.path.basename(test_dataset.protein_files[idx]).split('.')[0]
+                else:
+                    protein_name = ""
+                write_mol_with_coords(mol_pred, pos, os.path.join(args.out_dir, protein_name, f'VS_DD_{molName}_rank{rank+1}_confidence{confidence[rank]:.2f}.sdf'), args.remove_output_hs)
 
 
             # save visualisation frames
