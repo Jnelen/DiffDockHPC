@@ -49,6 +49,9 @@ The main file to use is `inferenceVS.py`. It has the following options/flags:
 - `-l`, `--ligand`: 
   The path to the directory of (separate) `mol2`/`sdf` ligand files.
 
+- `--protein_ligand_csv`: 
+  The path to a protein_ligand_csv file. Format and header should be like the following: complex_name,protein_path,ligand_description.
+  
 - `-o`, `--out`, `--out_dir`: 
   Directory where the output structures will be saved to.
 

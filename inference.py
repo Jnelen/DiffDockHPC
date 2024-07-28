@@ -13,8 +13,7 @@ import yaml
 import time
 
 # Ignore pandas deprecation warning around pyarrow
-warnings.filterwarnings("ignore", category=DeprecationWarning,
-                        message="(?s).*Pyarrow will become a required dependency of pandas.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message="(?s).*Pyarrow will become a required dependency of pandas.*")
 warnings.filterwarnings("ignore", message="invalid value encountered in cast")
 
 import numpy as np
@@ -166,7 +165,7 @@ def main(args):
         logger.info(f"DiffDock will run on {device}")
 
     if args.protein_ligand_csv is not None:
-        df = pd.read_csv(args.protein_ligand_csv, sep=';')
+        df = pd.read_csv(args.protein_ligand_csv, sep=None, engine="python")
     
         complex_name_list = set_nones(df['complex_name'].tolist())
         protein_path_list = set_nones(df['protein_path'].tolist())
