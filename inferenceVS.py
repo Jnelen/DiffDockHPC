@@ -184,6 +184,8 @@ else:
 		## Make dirs in the molecules/ directory with the protein name
 		for protein_path in protein_set:
 			os.mkdir(f"{outputDir}/molecules/{os.path.basename(protein_path).split('.')[0]}")
+			shutil.copy(protein_path, f"{outputDir}/molecules/")
+			
 		## Set the seperate_dirs arg
 		seperate_dirs_arg = " --seperate_dirs "
 			
