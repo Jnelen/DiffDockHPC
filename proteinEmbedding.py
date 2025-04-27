@@ -45,7 +45,7 @@ def compute_ESM_embeddings(model, alphabet, labels, sequences):
     toks_per_batch = 4096
     repr_layers = [33]
     include = "per_tok"
-    truncation_seq_length = 1022
+    truncation_seq_length = 10000
 
     dataset = FastaBatchedDataset(labels, sequences)
     batches = dataset.get_batch_indices(toks_per_batch, extra_toks_per_seq=1)
