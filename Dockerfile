@@ -15,6 +15,7 @@ ENV DIR_NAME="DiffDock"
 
 # Install micromamba
 RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xj bin/micromamba
+ENV MAMBA_ROOT_PREFIX=$HOME/micromamba
 ENV PATH=$HOME/bin:$HOME/.local/bin:$PATH
 
 # Copy and create Conda environment
